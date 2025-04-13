@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import Accompaniment from '@/models/Accompaniment'
-import { connectToDatabase } from '@/lib/db'
+import { connectDB } from '@/lib/db/mongodb'
 
 export async function GET(request: Request) {
   try {
@@ -11,7 +11,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    await connectToDatabase()
+    await connectDB()
 
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
