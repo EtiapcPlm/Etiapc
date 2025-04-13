@@ -6,6 +6,7 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
+import { compare } from "bcryptjs";
 
 const MAX_LOGIN_ATTEMPTS = 10;
 const LOCK_TIME = 30 * 60 * 1000; // 30 minutos en milisegundos
@@ -18,65 +19,36 @@ const handler = NextAuth({
     }),
     CredentialsProvider({
       name: "Credentials",
-      id: "credentials",
       credentials: {
-        email: { label: "Email", type: "text" },
-        password: { label: "Password", type: "password" },
-        remember: { label: "Remember", type: "checkbox" },
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        try {
-          await connectDB();
-          const userFound = await User.findOne({
-            email: credentials?.email,
-          }).select("+password");
-
-          if (!userFound) throw new Error("Credenciales incorrectas");
-
-          // Verificar si la cuenta está bloqueada
-          if (userFound.lockUntil && userFound.lockUntil > Date.now()) {
-            const remainingTime = Math.ceil((userFound.lockUntil.getTime() - Date.now()) / 1000 / 60);
-            throw new Error(`Tu cuenta está bloqueada. Intenta nuevamente en ${remainingTime} minutos.`);
-          }
-
-          const passwordMatch = await bcrypt.compare(
-            credentials!.password,
-            userFound.password
-          );
-
-          if (!passwordMatch) {
-            // Incrementar intentos fallidos
-            userFound.loginAttempts = (userFound.loginAttempts || 0) + 1;
-
-            // Si excede el máximo de intentos, bloquear la cuenta
-            if (userFound.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
-              userFound.lockUntil = new Date(Date.now() + LOCK_TIME);
-            }
-
-            await userFound.save();
-            throw new Error("Credenciales incorrectas");
-          }
-
-          // Resetear intentos fallidos si el login es exitoso
-          if (userFound.loginAttempts > 0 || userFound.lockUntil) {
-            userFound.loginAttempts = 0;
-            userFound.lockUntil = null;
-            await userFound.save();
-          }
-
-          return {
-            id: userFound._id.toString(),
-            email: userFound.email,
-            firstName: userFound.firstName,
-            lastName: userFound.lastName,
-            role: userFound.role,
-            image: userFound.image,
-            authProvider: userFound.authProvider,
-          };
-        } catch (error: any) {
-          throw new Error(error.message || "Error en la autenticación");
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("Email and password are required");
         }
-      },
+
+        await connectDB();
+
+        const user = await User.findOne({ email: credentials.email });
+
+        if (!user) {
+          throw new Error("User not found");
+        }
+
+        const isPasswordValid = await compare(credentials.password, user.password);
+
+        if (!isPasswordValid) {
+          throw new Error("Invalid password");
+        }
+
+        return {
+          id: user._id.toString(),
+          email: user.email,
+          name: `${user.firstName} ${user.lastName}`,
+          role: user.role
+        };
+      }
     }),
   ],
   callbacks: {
@@ -143,15 +115,15 @@ const handler = NextAuth({
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as "teacher" | "coordinator" | "administrator";
-        session.user.email = token.email as string;
-        session.user.firstName = token.firstName as string;
-        session.user.lastName = token.lastName as string;
-        session.user.image = token.image as string | null;
-        session.user.authProvider = token.authProvider as "credentials" | "google";
-        session.user.isEmailVerified = token.isEmailVerified as boolean;
+      if (token) {
+        session.user.id = token.id;
+        session.user.role = token.role;
+        session.user.email = token.email;
+        session.user.firstName = token.firstName;
+        session.user.lastName = token.lastName;
+        session.user.image = token.image;
+        session.user.authProvider = token.authProvider;
+        session.user.isEmailVerified = token.isEmailVerified;
       }
       return session;
     }

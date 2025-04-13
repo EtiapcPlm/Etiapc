@@ -71,4 +71,6 @@ const AccompanimentSchema = new Schema<IAccompaniment>(
   { timestamps: true }
 )
 
-export const AccompanimentModel = model<IAccompaniment>('Accompaniment', AccompanimentSchema) 
+const AccompanimentModel = model<IAccompaniment>('Accompaniment', AccompanimentSchema)
+
+export default AccompanimentModel 
