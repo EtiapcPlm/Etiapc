@@ -2,113 +2,77 @@
 // author Yxff
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { api } from "@/utils/api";
 
-export default function VerifyEmail({
-  params,
-}: {
-  params: { token: string };
-}) {
+export default function VerifyEmailPage({ params }: { params: { token: string } }) {
   const router = useRouter();
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-  const [message, setMessage] = useState("Verificando tu correo electrónico...");
+  const [loading, setLoading] = useState(true);
+  const [verified, setVerified] = useState(false);
 
   useEffect(() => {
     const verifyEmail = async () => {
       try {
-        const response = await fetch(`/api/auth/verify-email/${params.token}`);
-        const data = await response.json();
-
-        if (response.ok) {
-          setStatus("success");
-          setMessage("¡Correo electrónico verificado exitosamente!");
-          setTimeout(() => {
-            router.push("/auth/login");
-          }, 3000);
-        } else {
-          setStatus("error");
-          setMessage(data.message || "Error al verificar el correo electrónico");
-        }
-      } catch (error) {
-        setStatus("error");
-        setMessage("Error al verificar el correo electrónico");
+        await api.post(`/api/auth/verify-email/${params.token}`);
+        setVerified(true);
+        setTimeout(() => {
+          router.push("/auth/login?message=Email verified successfully");
+        }, 3000);
+      } catch (err) {
+        console.error("Email verification failed:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
     verifyEmail();
   }, [params.token, router]);
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <div className="flex justify-center">
-            <Image
-              src="/logo.png"
-              alt="ETIAPC Logo"
-              width={150}
-              height={150}
-              className="h-12 w-auto"
-            />
-          </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Verificación de Correo Electrónico
-          </h2>
-        </div>
-        <div className="mt-8">
-          <div className="rounded-md shadow-sm -space-y-px">
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6">
             <div className="text-center">
-              {status === "loading" && (
-                <div className="flex justify-center items-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                </div>
-              )}
-              {status === "success" && (
-                <div className="text-green-600">
-                  <svg
-                    className="mx-auto h-12 w-12"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </div>
-              )}
-              {status === "error" && (
-                <div className="text-red-600">
-                  <svg
-                    className="mx-auto h-12 w-12"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </div>
-              )}
-              <p className="mt-2 text-sm text-gray-600">{message}</p>
-              {status === "success" && (
-                <p className="mt-2 text-sm text-gray-600">
-                  Serás redirigido al inicio de sesión en unos segundos...
-                </p>
+              <p>Verificando correo electrónico...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>
+            {verified ? "Correo Verificado" : "Error de Verificación"}
+          </CardTitle>
+          <CardDescription>
+            {verified
+              ? "Tu correo electrónico ha sido verificado exitosamente."
+              : "No se pudo verificar tu correo electrónico."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="text-center">
+              {verified ? (
+                <p>Serás redirigido al inicio de sesión...</p>
+              ) : (
+                <Link href="/auth/login">
+                  <Button className="w-full">Volver al inicio de sesión</Button>
+                </Link>
               )}
             </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 } 

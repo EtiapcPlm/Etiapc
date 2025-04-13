@@ -1,7 +1,8 @@
 // version1
 // author Yxff
-import { withAuth } from "next-auth/middleware";
-import { NextResponse } from "next/server";
+import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
+import { getToken } from "next-auth/jwt"
 
 // Definir las rutas permitidas por rol
 const roleRoutes = {
@@ -17,41 +18,23 @@ const logAccess = (message: string, metadata?: any) => {
   }
 };
 
-export default withAuth(
-  function middleware(req) {
-    const token = req.nextauth.token;
-    const pathname = req.nextUrl.pathname;
+export async function middleware(request: NextRequest) {
+  const token = await getToken({ req: request })
 
-    // Si el usuario está autenticado y trata de acceder a /auth/login, redirigir al dashboard
-    if (token && pathname.startsWith("/auth/login")) {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
-    }
-
-    // Si el usuario está autenticado y trata de acceder a /dashboard/overview, redirigir al dashboard principal
-    if (token && pathname === "/dashboard/overview") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
-    }
-
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token, req }) => {
-        // Si la ruta es /auth/login, permitir acceso sin token
-        if (req.nextUrl.pathname.startsWith("/auth/login")) {
-          return true;
-        }
-        // Para otras rutas protegidas, requerir token
-        return !!token;
-      },
-    },
+  // Redirect to login if not authenticated
+  if (!token) {
+    return NextResponse.redirect(new URL("/auth/login", request.url))
   }
-);
+
+  // Allow the request to proceed
+  return NextResponse.next()
+}
 
 export const config = {
   matcher: [
     "/dashboard/:path*",
-    "/auth/login",
-    "/api/:path*"
+    "/api/accompaniments/:path*",
+    "/api/teachers/:path*",
+    "/api/subjects/:path*",
   ],
-};
+}

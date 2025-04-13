@@ -3,7 +3,6 @@
 "use client";
 
 import { useState, FormEvent, useEffect } from "react";
-import { AxiosError } from "axios";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -14,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { motion } from "framer-motion";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const containerVariants = {
   hidden: { opacity: 0, x: -50 },
@@ -23,11 +23,12 @@ const containerVariants = {
 
 function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);  
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
     const message = searchParams.get("message");
@@ -36,27 +37,35 @@ function LoginPage() {
     }
   }, [searchParams]);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
-    const formData = new FormData(event.currentTarget);
-    const res = await signIn("credentials", {
-      email: formData.get("email"),
-      password: formData.get("password"),
-      remember: formData.get("remember") === "on",
-      redirect: false,
-    });
 
-    if (res?.error) setError(res.error as string);
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
 
-    if (res?.ok) return router.push("../dashboard");
+      if (result?.ok) {
+        router.push("/dashboard");
+        router.refresh();
+      } else {
+        console.error("Login failed");
+      }
+    } catch (err) {
+      console.error("An error occurred during login:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleSignIn = async () => {
     try {
       await signIn("google", { callbackUrl: "/dashboard" });
     } catch (error) {
-      setError("Error al iniciar sesión con Google");
+      console.error("Error al iniciar sesión con Google:", error);
     }
   };
 
@@ -102,13 +111,6 @@ function LoginPage() {
               </div>
             )}
 
-            {/* Error */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
-                <span className="block sm:inline">{error}</span>
-              </div>
-            )}
-
             {/* Botones de Inicio de Sesión Social */}
             <div className="grid grid-cols-1 gap-4">
               <Button 
@@ -140,66 +142,38 @@ function LoginPage() {
             </div>
 
             {/* Formulario de Correo Electrónico y Contraseña */}
-            <form className="space-y-4" onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Correo electrónico</Label>
+                <Label htmlFor="email">Correo Electrónico</Label>
                 <Input
                   id="email"
-                  name="email"
                   type="email"
-                  placeholder="nombre@ejemplo.com"
+                  placeholder="correo@ejemplo.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
-
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Contraseña</Label>
-                  <Link
-                    href="/auth/forgot-password"
-                    className="text-sm text-primary hover:underline"
-                  >
-                    ¿Olvidaste tu contraseña?
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Ingresa tu contraseña"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  >
-                    {showPassword ? (
-                      <EyeOffIcon className="h-4 w-4" />
-                    ) : (
-                      <EyeIcon className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
+                <Label htmlFor="password">Contraseña</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
               </div>
-
-              {/* Recordar y Olvidé mi Contraseña */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="remember" />
-                  <label
-                    htmlFor="remember"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Recuérdame
-                  </label>
-                </div>
+              <div className="flex justify-between items-center">
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  ¿Olvidaste tu contraseña?
+                </Link>
               </div>
-
-              {/* Botón de Inicio de Sesión */}
-              <Button type="submit" className="w-full">
-                {loading ? "Iniciando sesión..." : "Iniciar sesión"}
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
               </Button>
             </form>
 

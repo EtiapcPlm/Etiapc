@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import axios from "axios";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { api } from "@/utils/api";
 
 const containerVariants = {
   hidden: { opacity: 0, x: -50 },
@@ -19,197 +21,104 @@ const containerVariants = {
 };
 
 function ResetPasswordPage() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
-  const [validToken, setValidToken] = useState(false);
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    password: "",
+    confirmPassword: ""
+  });
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
   useEffect(() => {
     const validateToken = async () => {
       if (!token) {
-        setError("Token inválido o expirado");
+        console.error("Token inválido o expirado");
         return;
       }
 
       try {
         await axios.get(`/api/auth/validate-reset-token?token=${token}`);
-        setValidToken(true);
       } catch (error) {
-        setError("Token inválido o expirado");
+        console.error("Token inválido o expirado");
       }
     };
 
     validateToken();
   }, [token]);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
-    setError("");
-    setSuccess(false);
 
     try {
-      const formData = new FormData(event.currentTarget);
-      const password = formData.get("password") as string;
-      const confirmPassword = formData.get("confirmPassword") as string;
-
-      if (password !== confirmPassword) {
-        setError("Las contraseñas no coinciden");
-        setLoading(false);
-        return;
-      }
-
-      if (password.length < 6) {
-        setError("La contraseña debe tener al menos 6 caracteres");
-        setLoading(false);
-        return;
-      }
-
-      await axios.post("/api/auth/reset-password", {
-        token,
-        password,
-      });
-      
-      setSuccess(true);
-      setTimeout(() => {
-        router.push("/auth/login");
-      }, 3000);
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        setError(
-          error.response?.data?.message || 
-          "Ocurrió un error al restablecer la contraseña"
-        );
-      } else {
-        setError("Ocurrió un error inesperado");
-      }
+      await api.post("/api/auth/reset-password", formData);
+      router.push("/auth/login?message=Password reset successful");
+    } catch (err) {
+      console.error("Password reset failed:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  if (!validToken) {
-    return (
-      <motion.div
-        className="min-h-screen flex items-center justify-center p-8"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        exit="exit"
-      >
-        <div className="w-full max-w-md space-y-4 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Token inválido o expirado
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            El enlace de recuperación de contraseña no es válido o ha expirado.
-          </p>
-          <Link
-            href="/auth/forgot-password"
-            className="text-primary hover:underline"
-          >
-            Solicitar un nuevo enlace
-          </Link>
-        </div>
-      </motion.div>
-    );
-  }
-
   return (
     <motion.div
-      className="min-h-screen flex"
+      className="min-h-screen flex items-center justify-center p-8"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
       exit="exit"
     >
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md space-y-8">
-          <div className="space-y-4">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Restablecer contraseña
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Ingresa tu nueva contraseña
-            </p>
-          </div>
-
-          {error && (
-            <div className="bg-red-500 text-white p-3 rounded-md text-sm">
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="bg-green-500 text-white p-3 rounded-md text-sm">
-              Contraseña actualizada correctamente. Serás redirigido al inicio de sesión...
-            </div>
-          )}
-
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Restablecer Contraseña</CardTitle>
+          <CardDescription>
+            Ingresa tu nueva contraseña
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="password">Nueva contraseña</Label>
+              <Label htmlFor="password">Nueva Contraseña</Label>
               <Input
                 id="password"
                 name="password"
                 type="password"
-                placeholder="Ingresa tu nueva contraseña"
+                value={formData.password}
+                onChange={handleChange}
                 required
-                minLength={6}
               />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
+              <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
               <Input
                 id="confirmPassword"
                 name="confirmPassword"
                 type="password"
-                placeholder="Confirma tu nueva contraseña"
+                value={formData.confirmPassword}
+                onChange={handleChange}
                 required
-                minLength={6}
               />
             </div>
-
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Actualizando..." : "Actualizar contraseña"}
+              {loading ? "Restableciendo..." : "Restablecer Contraseña"}
             </Button>
-
-            <div className="text-center text-sm">
-              <Link
-                href="/auth/login"
-                className="text-primary hover:underline"
-              >
+            <div className="text-center">
+              <Link href="/auth/login" className="text-sm text-blue-600 hover:underline">
                 Volver al inicio de sesión
               </Link>
             </div>
           </form>
-        </div>
-      </div>
-
-      <div className="hidden lg:flex w-1/2 bg-primary items-center justify-center p-12">
-        <div className="max-w-lg">
-          <div className="relative w-full aspect-square">
-            <Image
-              src="/reset-password.svg"
-              alt="Ilustración de restablecimiento de contraseña"
-              fill
-              className="object-contain"
-            />
-          </div>
-          <div className="text-center mt-8 space-y-2">
-            <h2 className="text-2xl font-semibold text-white">
-              Crea una nueva contraseña
-            </h2>
-            <p className="text-primary-foreground/80">
-              Asegúrate de elegir una contraseña segura
-            </p>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </motion.div>
   );
 }

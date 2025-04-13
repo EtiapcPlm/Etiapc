@@ -2,14 +2,15 @@
 // author Yxff
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
-import axios from "axios";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { api } from "@/utils/api";
 
 const containerVariants = {
   hidden: { opacity: 0, x: -50 },
@@ -18,33 +19,20 @@ const containerVariants = {
 };
 
 function ForgotPasswordPage() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
-    setSuccess("");
 
     try {
-      const response = await axios.post("/api/auth/forgot-password", {
-        email,
-      });
-
-      setSuccess(response.data.message);
-      setEmail("");
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        setError(
-          error.response?.data?.message ||
-            "Ocurrió un error al enviar el correo de recuperación"
-        );
-      } else {
-        setError("Ocurrió un error inesperado");
-      }
+      await api.post("/api/auth/forgot-password", { email });
+      setMessage("Si existe una cuenta con este correo, recibirás un enlace para restablecer tu contraseña.");
+    } catch (err) {
+      console.error("Error sending reset password email:", err);
+      setMessage("Ocurrió un error al enviar el correo. Por favor, intenta nuevamente.");
     } finally {
       setLoading(false);
     }
@@ -59,56 +47,41 @@ function ForgotPasswordPage() {
       exit="exit"
     >
       <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md space-y-8">
-          <div className="space-y-4">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Recuperar contraseña
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña
-            </p>
-          </div>
-
-          {error && (
-            <div className="bg-red-500 text-white p-3 rounded-md text-sm">
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="bg-green-500 text-white p-3 rounded-md text-sm">
-              {success}
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Recuperar Contraseña</CardTitle>
+            <CardDescription>
+              Ingresa tu correo electrónico para recibir instrucciones
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Correo Electrónico</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
-          )}
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-              <Label htmlFor="email">Correo electrónico</Label>
-                  <Input
-                    id="email"
-                name="email"
-                    type="email"
-                placeholder="nombre@ejemplo.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
+              {message && (
+                <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded">
+                  {message}
                 </div>
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Enviando..." : "Enviar enlace de recuperación"}
-                </Button>
-
-            <div className="text-center text-sm">
-              <Link
-                href="/auth/login"
-                className="text-primary hover:underline"
-              >
-                Volver al inicio de sesión
-              </Link>
-            </div>
-          </form>
-        </div>
+              )}
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Enviando..." : "Enviar Instrucciones"}
+              </Button>
+              <div className="text-center">
+                <Link href="/auth/login" className="text-sm text-blue-600 hover:underline">
+                  Volver al inicio de sesión
+                </Link>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="hidden lg:flex w-1/2 bg-primary items-center justify-center p-12">

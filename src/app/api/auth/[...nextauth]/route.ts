@@ -8,9 +8,6 @@ import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { compare } from "bcryptjs";
 
-const MAX_LOGIN_ATTEMPTS = 10;
-const LOCK_TIME = 30 * 60 * 1000; // 30 minutos en milisegundos
-
 const handler = NextAuth({
   providers: [
     GoogleProvider({
@@ -33,19 +30,19 @@ const handler = NextAuth({
         const user = await User.findOne({ email: credentials.email });
 
         if (!user) {
-          throw new Error("User not found");
+          throw new Error("Invalid credentials");
         }
 
-        const isPasswordValid = await compare(credentials.password, user.password);
+        const isValid = await compare(credentials.password, user.password);
 
-        if (!isPasswordValid) {
-          throw new Error("Invalid password");
+        if (!isValid) {
+          throw new Error("Invalid credentials");
         }
 
         return {
           id: user._id.toString(),
           email: user.email,
-          name: `${user.firstName} ${user.lastName}`,
+          name: user.name,
           role: user.role
         };
       }
@@ -105,25 +102,17 @@ const handler = NextAuth({
       if (user) {
         token.id = user.id;
         token.email = user.email;
-        token.firstName = user.firstName;
-        token.lastName = user.lastName;
+        token.name = user.name;
         token.role = user.role;
-        token.image = user.image;
-        token.authProvider = user.authProvider;
-        token.isEmailVerified = user.isEmailVerified;
       }
       return token;
     },
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id;
-        session.user.role = token.role;
         session.user.email = token.email;
-        session.user.firstName = token.firstName;
-        session.user.lastName = token.lastName;
-        session.user.image = token.image;
-        session.user.authProvider = token.authProvider;
-        session.user.isEmailVerified = token.isEmailVerified;
+        session.user.name = token.name;
+        session.user.role = token.role;
       }
       return session;
     }
