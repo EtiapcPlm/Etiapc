@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, model, Model } from 'mongoose'
+import mongoose, { Schema, Document, model } from 'mongoose'
 
 // version1
 // author Yxff
@@ -49,29 +49,26 @@ const AccompanimentSchema = new Schema<IAccompaniment>(
         contenidos: { type: Number, required: true, min: 1, max: 5 },
         metodologia: { type: Number, required: true, min: 1, max: 5 },
         recursos: { type: Number, required: true, min: 1, max: 5 },
-        evaluacion: { type: Number, required: true, min: 1, max: 5 },
+        evaluacion: { type: Number, required: true, min: 1, max: 5 }
       },
       desarrollo: {
         inicio: { type: Number, required: true, min: 1, max: 5 },
         desarrollo: { type: Number, required: true, min: 1, max: 5 },
         cierre: { type: Number, required: true, min: 1, max: 5 },
-        tiempo: { type: Number, required: true, min: 1, max: 5 },
+        tiempo: { type: Number, required: true, min: 1, max: 5 }
       },
       aspectosPedagogicos: {
         dominio: { type: Number, required: true, min: 1, max: 5 },
         comunicacion: { type: Number, required: true, min: 1, max: 5 },
         interaccion: { type: Number, required: true, min: 1, max: 5 },
-        clima: { type: Number, required: true, min: 1, max: 5 },
-      },
+        clima: { type: Number, required: true, min: 1, max: 5 }
+      }
     },
     observaciones: { type: String, required: true },
     fortalezas: { type: String, required: true },
-    sugerencias: { type: String, required: true },
+    sugerencias: { type: String, required: true }
   },
   { timestamps: true }
 )
 
-// Crear el modelo
-const AccompanimentModel = mongoose.models.Accompaniment || model<IAccompaniment>('Accompaniment', AccompanimentSchema)
-
-export default AccompanimentModel 
+export const AccompanimentModel = model<IAccompaniment>('Accompaniment', AccompanimentSchema) 
