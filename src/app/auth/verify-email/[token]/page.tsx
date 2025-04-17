@@ -3,10 +3,17 @@ import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-export default async function VerifyEmailPage({ params }: { params: { token: string } }) {
+type VerifyEmailPageProps = {
+  params: {
+    token: string;
+  };
+};
+
+export default async function VerifyEmailPage({ params }: VerifyEmailPageProps) {
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/verify-email/${params.token}`, {
       method: "GET",
+      cache: "no-store", // para que no se guarde el fetch
     });
 
     if (res.ok) {
