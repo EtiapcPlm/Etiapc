@@ -1,13 +1,15 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import AccompanimentModel from '@/models/Accompaniment'
 import { connectDB } from '@/lib/db/mongodb'
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+function getIdFromRequest(request: NextRequest): string | null {
+  const id = request.nextUrl.pathname.split('/').pop()
+  return id || null
+}
+
+export async function GET(request: NextRequest) {
   try {
     await connectDB()
     const session = await getServerSession(authOptions)
@@ -16,7 +18,10 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const accompaniment = await AccompanimentModel.findById(params.id)
+    const id = getIdFromRequest(request)
+    if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+
+    const accompaniment = await AccompanimentModel.findById(id)
       .populate('profesor', 'firstName lastName')
       .populate('coordinador', 'firstName lastName')
 
@@ -31,10 +36,7 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest) {
   try {
     await connectDB()
     const session = await getServerSession(authOptions)
@@ -43,9 +45,12 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const id = getIdFromRequest(request)
+    if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+
     const body = await request.json()
     const accompaniment = await AccompanimentModel.findByIdAndUpdate(
-      params.id,
+      id,
       body,
       { new: true }
     )
@@ -63,27 +68,27 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest) {
   try {
     await connectDB()
     const session = await getServerSession(authOptions)
 
-    if (!session) {
+    if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const accompaniment = await AccompanimentModel.findByIdAndDelete(params.id)
+    const id = getIdFromRequest(request)
+    if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+
+    const accompaniment = await AccompanimentModel.findByIdAndDelete(id)
 
     if (!accompaniment) {
-      return NextResponse.json({ error: 'Accompaniment not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Acompañamiento no encontrado' }, { status: 404 })
     }
 
-    return NextResponse.json({ message: 'Accompaniment deleted successfully' })
+    return NextResponse.json({ message: 'Acompañamiento eliminado correctamente' })
   } catch (error) {
     console.error('Error deleting accompaniment:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
   }
-} 
+}
