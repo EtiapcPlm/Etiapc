@@ -1,13 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { AccompanimentModel } from '@/models/Accompaniment'
 import { connectDB } from '@/lib/db/mongodb'
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest) {
   try {
     await connectDB()
     const session = await getServerSession(authOptions)
@@ -16,28 +13,25 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const accompaniments = await AccompanimentModel.find({ coordinador: params.id })
+    const id = request.nextUrl.pathname.split('/').pop()
+    if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+
+    const accompaniments = await AccompanimentModel.find({ coordinador: id })
       .sort({ fecha: -1 })
       .populate('profesor', 'firstName lastName')
       .populate('coordinador', 'firstName lastName')
 
-    // Calcular estadísticas
     const totalAcompanamientos = accompaniments.length
     const realizados = accompaniments.filter(a => a.estado === 'realizado')
     const pendientes = accompaniments.filter(a => a.estado === 'pendiente')
     const cancelados = accompaniments.filter(a => a.estado === 'cancelado')
 
-    // Actualizar los cálculos para reflejar la nueva estructura del instrumento
     const promedioGeneral = realizados.length > 0
       ? realizados.reduce((acc, curr) => {
-          // Calcular promedios de cada sección
-          const promPlanificacion = calcularPromedioSeccion(curr.instrumento.planificacion);
-          const promDesarrollo = calcularPromedioSeccion(curr.instrumento.desarrollo);
-          const promAspectosPedagogicos = calcularPromedioSeccion(curr.instrumento.aspectosPedagogicos);
-          
-          // Promedio general de las tres secciones
-          const promedio = (promPlanificacion + promDesarrollo + promAspectosPedagogicos) / 3;
-          return acc + promedio;
+          const promPlanificacion = calcularPromedioSeccion(curr.instrumento.planificacion)
+          const promDesarrollo = calcularPromedioSeccion(curr.instrumento.desarrollo)
+          const promAspectosPedagogicos = calcularPromedioSeccion(curr.instrumento.aspectosPedagogicos)
+          return acc + (promPlanificacion + promDesarrollo + promAspectosPedagogicos) / 3
         }, 0) / realizados.length
       : 0
 
@@ -69,10 +63,9 @@ export async function GET(
   }
 }
 
-// Función auxiliar para calcular el promedio de una sección
 function calcularPromedioSeccion(seccion: Record<string, number>): number {
-  const valores = Object.values(seccion);
-  if (valores.length === 0) return 0;
-  const suma = valores.reduce((a, b) => a + b, 0);
-  return suma / valores.length;
-} 
+  const valores = Object.values(seccion)
+  if (valores.length === 0) return 0
+  const suma = valores.reduce((a, b) => a + b, 0)
+  return suma / valores.length
+}
