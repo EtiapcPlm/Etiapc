@@ -12,8 +12,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { api } from "@/utils/api";
+import axios from "axios";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 
 const containerVariants = {
   hidden: { opacity: 0, x: -50 },
@@ -46,7 +47,7 @@ function RegisterPage() {
     setLoading(true);
 
     try {
-      await api.post("/api/auth/register", formData);
+      await axios.post("/api/auth/register", formData);
       router.push("/auth/login?message=Registration successful");
     } catch (err) {
       console.error("Registration failed:", err);
