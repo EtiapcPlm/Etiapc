@@ -12,7 +12,6 @@ import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import axios from "axios";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { api } from "@/utils/api";
 
 const containerVariants = {
   hidden: { opacity: 0, x: -50 },
@@ -60,7 +59,7 @@ function ResetPasswordPage() {
     setLoading(true);
 
     try {
-      await api.post("/api/auth/reset-password", formData);
+      await axios.post("/api/auth/reset-password", formData);
       router.push("/auth/login?message=Password reset successful");
     } catch (err) {
       console.error("Password reset failed:", err);
