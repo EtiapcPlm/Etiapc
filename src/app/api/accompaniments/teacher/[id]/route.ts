@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { AccompanimentModel } from '@/models/Accompaniment'
+import AccompanimentModel from '@/models/Accompaniment'
 import { connectDB } from '@/lib/db/mongodb'
 
 export async function GET(request: NextRequest) {
