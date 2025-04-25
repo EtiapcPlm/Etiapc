@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { api } from "@/utils/api";
+import axios from "axios";
 
 const containerVariants = {
   hidden: { opacity: 0, x: -50 },
@@ -28,7 +28,7 @@ function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      await api.post("/api/auth/forgot-password", { email });
+      await axios.post("/api/auth/forgot-password", { email });
       setMessage("Si existe una cuenta con este correo, recibirás un enlace para restablecer tu contraseña.");
     } catch (err) {
       console.error("Error sending reset password email:", err);
