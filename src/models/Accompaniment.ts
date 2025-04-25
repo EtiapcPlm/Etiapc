@@ -33,6 +33,7 @@ export interface IAccompaniment extends Document {
   observaciones: string
   fortalezas: string
   sugerencias: string
+  estado: 'realizado' | 'pendiente' | 'cancelado'
   createdAt: Date
   updatedAt: Date
 }
@@ -66,7 +67,8 @@ const AccompanimentSchema = new Schema<IAccompaniment>(
     },
     observaciones: { type: String, required: true },
     fortalezas: { type: String, required: true },
-    sugerencias: { type: String, required: true }
+    sugerencias: { type: String, required: true },
+    estado: { type: String, enum: ['realizado', 'pendiente', 'cancelado'], required: true }
   },
   { timestamps: true }
 )
