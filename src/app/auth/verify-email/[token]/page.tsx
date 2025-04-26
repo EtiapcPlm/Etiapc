@@ -7,14 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import axios from "axios";
 
-interface PageProps {
+type Props = {
   params: {
     token: string;
   };
   searchParams?: { [key: string]: string | string[] | undefined };
-}
+};
 
-export default function VerifyEmailPage({ params }: PageProps) {
+export default function VerifyEmailPage({ params }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [verified, setVerified] = useState(false);
