@@ -1,12 +1,13 @@
 import { VerifyEmailClient } from "./verify-email-client";
 
-interface PageProps {
-  params: {
+type Props = {
+  params: Promise<{
     token: string;
-  };
-}
+  }>;
+};
 
-export default function VerifyEmailPage({ params }: PageProps) {
-  return <VerifyEmailClient token={params.token} />;
+export default async function VerifyEmailPage({ params }: Props) {
+  const resolvedParams = await params;
+  return <VerifyEmailClient token={resolvedParams.token} />;
 } 
 
