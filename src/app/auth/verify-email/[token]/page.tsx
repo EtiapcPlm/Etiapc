@@ -11,6 +11,7 @@ interface PageProps {
   params: {
     token: string;
   };
+  searchParams?: { [key: string]: string | string[] | undefined };
 }
 
 export default function VerifyEmailPage({ params }: PageProps) {
