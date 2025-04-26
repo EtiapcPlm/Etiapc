@@ -1,46 +1,42 @@
-import { NextRequest, NextResponse } from "next/server"
-import { connectDB } from "@/lib/db/mongodb"
-import User from "@/models/user"
+// version1
+// author Yxff
+import { NextResponse } from "next/server";
+import { connectDB } from "@/lib/db/mongodb";
+import User from "@/models/user";
 
-export async function GET(req: NextRequest) {
+export async function GET(
+  request: Request,
+  { params }: { params: { token: string } }
+) {
   try {
-    const token = req.nextUrl.pathname.split("/").pop()
-
-    if (!token) {
-      return NextResponse.json(
-        { message: "Token de verificación requerido" },
-        { status: 400 }
-      )
-    }
-
-    await connectDB()
-
+    await connectDB();
+    
     const user = await User.findOne({
-      emailVerificationToken: token,
-      emailVerificationExpires: { $gt: Date.now() },
-    })
+      emailVerificationToken: params.token,
+      emailVerificationExpires: { $gt: Date.now() }
+    });
 
     if (!user) {
       return NextResponse.json(
-        { message: "Token de verificación inválido o expirado" },
+        { error: "Token inválido o expirado" },
         { status: 400 }
-      )
+      );
     }
 
-    user.isEmailVerified = true
-    user.emailVerificationToken = undefined
-    user.emailVerificationExpires = undefined
-    await user.save()
+    user.isEmailVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save();
 
     return NextResponse.json(
-      { message: "Correo electrónico verificado exitosamente" },
+      { message: "Email verificado exitosamente" },
       { status: 200 }
-    )
+    );
   } catch (error) {
-    console.error("Error en verify-email-token:", error)
+    console.error("Error en verificación de email:", error);
     return NextResponse.json(
-      { message: "Ocurrió un error al verificar el correo electrónico" },
+      { error: "Error al verificar el email" },
       { status: 500 }
-    )
+    );
   }
-}
+} 
