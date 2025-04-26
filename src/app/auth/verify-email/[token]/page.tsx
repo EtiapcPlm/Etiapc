@@ -1,6 +1,5 @@
 // version1
 // author Yxff
-"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
