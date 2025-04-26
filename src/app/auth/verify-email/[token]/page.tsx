@@ -1,14 +1,15 @@
 // src/app/auth/verify-email/[token]/page.tsx
-
 import { Suspense } from "react";
 import VerifyEmailClient from "./client-component";
 
-// Eliminamos la definición manual de PageProps y usamos los tipos generados por Next.js
-interface Params {
-  token: string;
+interface PageProps {
+  params: {
+    token: string;
+  };
+  searchParams?: { [key: string]: string | string[] | undefined };
 }
 
-export default function VerifyEmailPage({ params }: { params: Params }) {
+export default async function VerifyEmailPage({ params }: PageProps) {
   const { token } = params;
   
   return (
