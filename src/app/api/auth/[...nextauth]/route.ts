@@ -7,6 +7,24 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { compare } from "bcryptjs";
+import { JWT } from "next-auth/jwt";
+import { Session } from "next-auth";
+
+interface Token extends JWT {
+  id?: string;
+  email?: string;
+  name?: string;
+  role?: string;
+}
+
+interface SessionWithUser extends Session {
+  user: {
+    id?: string;
+    email?: string;
+    name?: string;
+    role?: string;
+  };
+}
 
 const handler = NextAuth({
   providers: [
@@ -68,7 +86,7 @@ const handler = NextAuth({
               password: await bcrypt.hash(Math.random().toString(36), 10),
               authProvider: "google",
               image: user.image,
-              isEmailVerified: true, // Marcar como verificado automáticamente para usuarios de Google
+              isEmailVerified: true,
             });
 
             user.role = newUser.role;
@@ -83,7 +101,6 @@ const handler = NextAuth({
             user.authProvider = existingUser.authProvider;
             user.isEmailVerified = existingUser.isEmailVerified;
             
-            // Actualizar la imagen de perfil si es un usuario de Google
             if (user.image && existingUser.authProvider === "google") {
               await User.findByIdAndUpdate(existingUser._id, {
                 image: user.image
@@ -107,7 +124,7 @@ const handler = NextAuth({
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: SessionWithUser; token: Token }) {
       if (token) {
         session.user.id = token.id;
         session.user.email = token.email;
