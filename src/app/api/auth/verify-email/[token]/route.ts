@@ -7,7 +7,7 @@ import User from "@/models/user";
 export async function GET(
   request: NextRequest,
   { params }: { params: { token: string } }
-) {
+): Promise<NextResponse> {
   try {
     await connectDB();
     
