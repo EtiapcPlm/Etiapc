@@ -8,22 +8,26 @@ import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { compare } from "bcryptjs";
 import { JWT } from "next-auth/jwt";
-import { Session } from "next-auth";
+import { Session, DefaultSession } from "next-auth";
 
-interface Token extends JWT {
-  id?: string;
-  email?: string;
-  name?: string;
-  role?: string;
-}
+type UserRole = "teacher" | "coordinator" | "administrator";
 
-interface SessionWithUser extends Session {
-  user: {
-    id?: string;
-    email?: string;
-    name?: string;
-    role?: string;
-  };
+declare module "next-auth" {
+  interface Session extends DefaultSession {
+    user: {
+      id: string;
+      email: string;
+      name: string;
+      role: UserRole;
+    } & DefaultSession["user"];
+  }
+
+  interface JWT {
+    id: string;
+    email: string;
+    name: string;
+    role: UserRole;
+  }
 }
 
 const handler = NextAuth({
@@ -61,7 +65,7 @@ const handler = NextAuth({
           id: user._id.toString(),
           email: user.email,
           name: user.name,
-          role: user.role
+          role: user.role as UserRole
         };
       }
     }),
@@ -74,7 +78,6 @@ const handler = NextAuth({
           const existingUser = await User.findOne({ email: user.email });
           
           if (!existingUser) {
-            // Dividir el nombre completo en firstName y lastName
             const [firstName = "", ...lastNameParts] = (user.name || "").split(" ");
             const lastName = lastNameParts.join(" ");
 
@@ -89,13 +92,13 @@ const handler = NextAuth({
               isEmailVerified: true,
             });
 
-            user.role = newUser.role;
+            user.role = newUser.role as UserRole;
             user.firstName = newUser.firstName;
             user.lastName = newUser.lastName;
             user.authProvider = newUser.authProvider;
             user.isEmailVerified = true;
           } else {
-            user.role = existingUser.role;
+            user.role = existingUser.role as UserRole;
             user.firstName = existingUser.firstName;
             user.lastName = existingUser.lastName;
             user.authProvider = existingUser.authProvider;
@@ -117,19 +120,28 @@ const handler = NextAuth({
     },
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
-        token.role = user.role;
+        return {
+          ...token,
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role as UserRole
+        };
       }
       return token;
     },
-    async session({ session, token }: { session: SessionWithUser; token: Token }) {
+    async session({ session, token }) {
       if (token) {
-        session.user.id = token.id;
-        session.user.email = token.email;
-        session.user.name = token.name;
-        session.user.role = token.role;
+        return {
+          ...session,
+          user: {
+            ...session.user,
+            id: token.id as string,
+            email: token.email as string,
+            name: token.name as string,
+            role: token.role as UserRole
+          }
+        };
       }
       return session;
     }
