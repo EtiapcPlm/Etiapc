@@ -3,13 +3,13 @@ import axios from "axios";
 import { IAccompaniment } from "@/models/Accompaniment";
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function AccompanimentPage({ params }: PageProps) {
-  const { id } = params;
+  const { id } = await params;
   
   try {
     const response = await axios.get(`/api/accompaniments/${id}`);
@@ -19,4 +19,4 @@ export default async function AccompanimentPage({ params }: PageProps) {
   } catch (error) {
     return <div>Error al cargar el acompañamiento</div>;
   }
-}
+} 
